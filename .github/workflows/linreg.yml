@@ -1,0 +1,36 @@
+name: LinReg Workflow
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.11.11
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11.11'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mypy pylint black==24.8.0 pytest==8.3.3 pandas==2.2.2 numpy scikit-learn
+    - name: Install project dependencies
+      run: |
+        if [ -f ${{ github.head_ref }}/requirements.txt ];
+        then
+          pip install -r ${{ github.head_ref }}/requirements.txt
+        fi
+    - name: Run unittests
+      run: |
+        cd linreg_housing
+        python -m unittest discover ${{ github.head_ref }}
+    - name: Run black
+      run: |
+        black -l 120 --check --diff --color --exclude "test*" linreg_housing
+    - name: Run mypy
+      run: |
+        mypy --ignore-missing-imports linreg_housing
+    - name: Run pylint
+      run: |
+        pylint --disable=missing-docstring --variable-rgx="[a-z0-9_]{1,30}$" --argument-rgx="^[a-z][a-z0-9]*((_[a-z0-9]+)*)?$" --ignore-patterns="test_.*?py" --exit-zero linreg_housing
